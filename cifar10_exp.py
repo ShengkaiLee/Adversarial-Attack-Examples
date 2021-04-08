@@ -60,13 +60,14 @@ def save_image(images, labels, name):
     num_row = 2
     num_col = 5
     # plot images
-    plt.title(name)
+    
     fig, axes = plt.subplots(
         num_row, num_col, figsize=(1.5*num_col, 2*num_row))
     for i in range(10):
         ax = axes[i//num_col, i % num_col]
         ax.imshow(images[i], cmap='gray')
         ax.set_title('Label: {}'.format(labels[i]))
+    plt.title(name)
     plt.tight_layout()
     plt.savefig(name + '.png')
 
