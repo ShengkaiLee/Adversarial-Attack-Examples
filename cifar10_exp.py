@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
+import matplotlib.pyplot as plt
 from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.torch.attacks.projected_gradient_descent import (
     projected_gradient_descent,
@@ -54,6 +55,20 @@ def ld_cifar10():
     )
     return EasyDict(train=train_loader, test=test_loader)
 
+def save_image(images, labels, name):
+    images = np.transpose(images, (0, 2, 3, 1))
+    num_row = 2
+    num_col = 5
+    # plot images
+    plt.title(name)
+    fig, axes = plt.subplots(
+        num_row, num_col, figsize=(1.5*num_col, 2*num_row))
+    for i in range(10):
+        ax = axes[i//num_col, i % num_col]
+        ax.imshow(images[i], cmap='gray')
+        ax.set_title('Label: {}'.format(labels[i]))
+    plt.tight_layout()
+    plt.savefig(name + '.png')
 
 def main():
     # Load training and test data
@@ -72,50 +87,53 @@ def main():
     net.eval()
     report = EasyDict(nb_test=0, correct=0, correct_fgm=0, correct_pgd=0,
                       correct_fgm_inf=0, correct_fgm_2=0, correct_pgd_inf=0, correct_pgd_2=0)
+    images, labels = [],[]
     for x, y in data.test:
+        images, labels = x, y
         x, y = x.to(device), y.to(device)
-        x_fgm_inf = fast_gradient_method(net, x, 0.2, np.inf)
-        x_fgm_2 = fast_gradient_method(net, x, 2, np.inf)
-        x_pgd_inf = projected_gradient_descent(net, x, 0.2, 0.01, 40, np.inf)
-        x_pgd_2 = projected_gradient_descent(net, x, 2, 0.01, 40, np.inf)
+        # x_fgm_inf = fast_gradient_method(net, x, 0.2, np.inf)
+        # x_fgm_2 = fast_gradient_method(net, x, 2, np.inf)
+        # x_pgd_inf = projected_gradient_descent(net, x, 0.2, 0.01, 40, np.inf)
+        # x_pgd_2 = projected_gradient_descent(net, x, 2, 0.01, 40, np.inf)
         _, y_pred = net(x).max(1)
-        _, y_pred_fgm_inf = net(x_fgm_inf).max(1)
-        _, y_pred_fgm_2 = net(x_fgm_2).max(1)
-        _, y_pred_pgd_inf = net(x_pgd_inf).max(1)
-        _, y_pred_pgd_2 = net(x_pgd_2).max(1)
+        # _, y_pred_fgm_inf = net(x_fgm_inf).max(1)
+        # _, y_pred_fgm_2 = net(x_fgm_2).max(1)
+        # _, y_pred_pgd_inf = net(x_pgd_inf).max(1)
+        # _, y_pred_pgd_2 = net(x_pgd_2).max(1)
         report.nb_test += y.size(0)
         report.correct += y_pred.eq(y).sum().item()
-        report.correct_fgm_inf += y_pred_fgm_inf.eq(y).sum().item()
-        report.correct_fgm_2 += y_pred_fgm_2.eq(y).sum().item()
-        report.correct_pgd_inf += y_pred_pgd_inf.eq(y).sum().item()
-        report.correct_pgd_2 += y_pred_pgd_2.eq(y).sum().item()
-    print(x_fgm_2.shape)
-    print(x_pgd_2.shape)
+        # report.correct_fgm_inf += y_pred_fgm_inf.eq(y).sum().item()
+        # report.correct_fgm_2 += y_pred_fgm_2.eq(y).sum().item()
+        # report.correct_pgd_inf += y_pred_pgd_inf.eq(y).sum().item()
+        # report.correct_pgd_2 += y_pred_pgd_2.eq(y).sum().item()
+    # print(x_fgm_2.shape)
+    # print(x_pgd_2.shape)
     print(
         "test acc on clean examples (%): {:.3f}".format(
             report.correct / report.nb_test * 100.0
         )
     )
-    print(
-        "test acc on FGM_inf adversarial examples (%): {:.3f}".format(
-            report.correct_fgm_inf / report.nb_test * 100.0
-        )
-    )
-    print(
-        "test acc on FGM_2 adversarial examples (%): {:.3f}".format(
-            report.correct_fgm_2 / report.nb_test * 100.0
-        )
-    )
-    print(
-        "test acc on PGD_inf adversarial examples (%): {:.3f}".format(
-            report.correct_pgd_inf / report.nb_test * 100.0
-        )
-    )
-    print(
-        "test acc on PGD_2 adversarial examples (%): {:.3f}".format(
-            report.correct_pgd_2 / report.nb_test * 100.0
-        )
-    )
+    save_image(images, labels, 'clean')
+    # print(
+    #     "test acc on FGM_inf adversarial examples (%): {:.3f}".format(
+    #         report.correct_fgm_inf / report.nb_test * 100.0
+    #     )
+    # )
+    # print(
+    #     "test acc on FGM_2 adversarial examples (%): {:.3f}".format(
+    #         report.correct_fgm_2 / report.nb_test * 100.0
+    #     )
+    # )
+    # print(
+    #     "test acc on PGD_inf adversarial examples (%): {:.3f}".format(
+    #         report.correct_pgd_inf / report.nb_test * 100.0
+    #     )
+    # )
+    # print(
+    #     "test acc on PGD_2 adversarial examples (%): {:.3f}".format(
+    #         report.correct_pgd_2 / report.nb_test * 100.0
+    #     )
+    # )
 
 
 if __name__ == "__main__":
