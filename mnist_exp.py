@@ -10,6 +10,11 @@ import torchvision
 from datasets import MNISTDataset
 import matplotlib.pyplot as plt
 
+from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method
+from cleverhans.torch.attacks.projected_gradient_descent import (
+    projected_gradient_descent,
+)
+
 class CNN(torch.nn.Module):
     """Basic CNN architecture."""
 
@@ -77,15 +82,50 @@ def main():
     net.load_state_dict(torch.load("mnist.pt", map_location=device))
     # Evaluate on clean and adversarial data
     net.eval()
-    report = EasyDict(nb_test=0, correct=0, correct_fgm=0, correct_pgd=0)
+    report = EasyDict(nb_test=0, correct=0, correct_fgm=0, correct_pgd=0,
+                      correct_fgm_inf=0, correct_fgm_2=0, correct_pgd_inf=0, correct_pgd_2=0)
     for x, y in data.test:
         x, y = x.to(device), y.to(device)
-        _, y_pred = net(x).max(1)  # model prediction on clean examples
+        x_fgm_inf = fast_gradient_method(net, x, 0.2, np.inf)
+        x_fgm_2 = fast_gradient_method(net, x, 2, np.inf)
+        x_pgd_inf = projected_gradient_descent(net, x, 0.2, 0.01, 40, np.inf)
+        x_pgd_2 = projected_gradient_descent(net, x, 2, 0.01, 40, np.inf)
+        _, y_pred = net(x).max(1)  
+        _, y_pred_fgm_inf = net(x_fgm_inf).max(1)  
+        _, y_pred_fgm_2 = net(x_fgm_2).max(1)
+        _, y_pred_pgd_inf = net(x_pgd_inf).max(1)
+        _, y_pred_pgd_2 = net(x_pgd_2).max(1)
         report.nb_test += y.size(0)
         report.correct += y_pred.eq(y).sum().item()
+        report.correct_fgm_inf += y_pred_fgm_inf.eq(y).sum().item()
+        report.correct_fgm_2 += y_pred_fgm_2.eq(y).sum().item()
+        report.correct_pgd_inf += y_pred_pgd_inf.eq(y).sum().item()
+        report.correct_pgd_2 += y_pred_pgd_2.eq(y).sum().item()
+    print(x_fgm_2.shape)
+    print(x_pgd_2.shape)
     print(
         "test acc on clean examples (%): {:.3f}".format(
             report.correct / report.nb_test * 100.0
+        )
+    )
+    print(
+        "test acc on FGM_inf adversarial examples (%): {:.3f}".format(
+            report.correct_fgm_inf / report.nb_test * 100.0
+        )
+    )
+    print(
+        "test acc on FGM_2 adversarial examples (%): {:.3f}".format(
+            report.correct_fgm_2 / report.nb_test * 100.0
+        )
+    )
+    print(
+        "test acc on PGD_inf adversarial examples (%): {:.3f}".format(
+            report.correct_pgd_inf / report.nb_test * 100.0
+        )
+    )
+    print(
+        "test acc on PGD_2 adversarial examples (%): {:.3f}".format(
+            report.correct_pgd_2 / report.nb_test * 100.0
         )
     )
 
