@@ -73,11 +73,12 @@ def save_image(images, labels, name):
     # plot images
     images = images.detach().numpy()
     labels = labels.detach().numpy()
-    for i in range(9):
-	# define subplot
-        plt.subplot(330 + 1 + i)
-        # plot raw pixel data
-        plt.imshow(images[i][0])
+    fig, axes = plt.subplots(num_row, num_col, figsize=(1.5*num_col, 2*num_row))
+    for i in range(10):
+        ax = axes[i//num_col, i % num_col]
+        ax.imshow(images[i][0], cmap='gray')
+        ax.set_title('Label: {}'.format(labels[i]))
+    plt.tight_layout()
     plt.savefig(name + ".png")
 def main():
     # Load training and test data

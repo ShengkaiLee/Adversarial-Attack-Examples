@@ -67,10 +67,10 @@ def save_image(images, labels, name):
         num_row, num_col, figsize=(1.5*num_col, 2*num_row))
     for i in range(10):
         ax = axes[i//num_col, i % num_col]
-        ax.imshow(images[i][0])
+        ax.imshow(images[i])
         ax.set_title('Label: {}'.format(labels[i]))
     plt.tight_layout()
-    plt.savefig(name + '.png')
+    plt.savefig(name + ".png")
 
 def main():
     # Load training and test data
